@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+.ipynb_checkpoints/
+
+logs/
+plugins/
+airflow.db
+airflow.cfg
+
+data/input/
