@@ -1,5 +1,11 @@
 {
     "conventionalCommits.scopes": [
-        "docker"
+        "docker",
+        "bronze_layer",
+        "silver_layer",
+        "gold_layer",
+        "utils",
+        "Airflow",
+        "output"
     ]
 }
