@@ -35,7 +35,7 @@ def ingest(run_date: str) -> None:
     report_quality(df, "bronze.customers")
 
     out_dir = ensure_dir(get_bronze_path(DOMAIN, ENTITY, run_date))
-    out_path = os.path.join(out_dir, "bronze_customers.csv")
+    out_path = os.path.join(out_dir, "customers.csv")
     df.to_csv(out_path, index=False, encoding="utf-8")
     logger.info(f"Bronze customers written: {out_path} ({len(df)} rows)")
 

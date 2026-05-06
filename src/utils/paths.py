@@ -27,6 +27,11 @@ def get_gold_path(domain: str, entity: str, run_date: str) -> str:
     return _build_path("gold", domain, entity, run_date)
 
 
+def get_gold_table_path(domain: str, table: str) -> str:
+    """Gold tables have no date partition — data is accumulated into a single file."""
+    return os.path.join(BASE_DIR, "data", "gold", domain, table)
+
+
 def get_rejects_path(domain: str, entity: str, run_date: str) -> str:
     return _build_path("rejects", domain, entity, run_date)
 
