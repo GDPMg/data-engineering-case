@@ -1,0 +1,4 @@
+year,month,total_orders,total_amount,avg_amount,unique_customers,paid_count,cancelled_count,refunded_count
+2024,7,51,26832.29,526.12,32,24,15,12
+2024,8,61,29766.39,487.97,38,29,20,12
+2024,9,59,28566.52,484.18,39,35,13,11
