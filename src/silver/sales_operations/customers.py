@@ -45,15 +45,13 @@ def process(run_date: str) -> None:
     # The source appends updated records at the end, so the last row wins
     before = len(df)
     df = df.drop_duplicates(subset=["customer_id"], keep="last")
-    logger.info(f"Deduplication removed {before - len(df)} duplicate customer(s)")
+    logger.info(f"Deduplication removed {before - len(df)} duplicate customer")
 
     all_rejects = []
 
-    # Hard reject: status outside the known domain
     df, rej = split_rejects(df, ~df["status"].isin(VALID_STATUSES), "invalid_status")
     all_rejects.append(rej)
 
-    # Soft flags: missing optional fields (record is kept, flag is set for downstream awareness)
     df["has_email"] = df["email"].notna() & (df["email"] != "")
     df["has_phone"] = df["phone"].notna() & (df["phone"] != "")
     df["has_created_at"] = df["created_at"].notna()
@@ -76,7 +74,7 @@ def process(run_date: str) -> None:
         combined.to_csv(
             os.path.join(rej_dir, "customers.csv"), index=False, encoding="utf-8"
         )
-        logger.warning(f"Rejects: {len(combined)} customer record(s) written to rejects")
+        logger.warning(f"Rejects: {len(combined)} customer record written to rejects")
 
 
 if __name__ == "__main__":

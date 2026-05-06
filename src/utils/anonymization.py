@@ -17,7 +17,7 @@ def hash_field(value) -> str | None:
 
 
 def mask_email(value) -> str | None:
-    """Keeps the domain visible (***@domain.com) to allow city/region analysis without exposing identity."""
+    """Keeps the domain visible to allow city/region analysis without exposing identity."""
     if pd.isna(value) or str(value).strip() == "":
         return None
     parts = str(value).strip().split("@")
@@ -37,7 +37,7 @@ def mask_phone(value) -> str | None:
 
 
 def apply_lgpd(df: pd.DataFrame) -> pd.DataFrame:
-    """Applies LGPD-compliant masking to all PII columns present in the DataFrame."""
+    """Applies LGPD-compliant masking"""
     df = df.copy()
     if "name" in df.columns:
         df["name"] = df["name"].apply(hash_field)

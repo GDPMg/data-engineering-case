@@ -11,17 +11,17 @@ def report_quality(df: pd.DataFrame, entity: str) -> None:
         nulls = df[col].isna().sum()
         if nulls > 0:
             _logger.warning(
-                f"[{entity}] '{col}': {nulls} null(s) ({nulls / len(df):.1%})"
+                f"[{entity}] '{col}': {nulls} null ({nulls / len(df):.1%})"
             )
     dups = df.duplicated().sum()
     if dups:
-        _logger.warning(f"[{entity}] {dups} fully duplicated row(s) detected")
+        _logger.warning(f"[{entity}] {dups} fully duplicated row detected")
 
 
 def split_rejects(
     df: pd.DataFrame, mask: pd.Series, reason: str
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Splits df into (valid, rejects). Rejects gain a 'reject_reason' column."""
+    """Splits df into (valid, rejects)"""
     rejects = df[mask].copy()
     rejects["reject_reason"] = reason
     valid = df[~mask].copy()

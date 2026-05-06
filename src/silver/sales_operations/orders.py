@@ -48,10 +48,9 @@ def process(run_date: str) -> None:
     df["payment_method"] = df["payment_method"].str.strip().str.lower()
 
     # Duplicates: keep last occurrence per order_id
-    # The source may append corrected records (e.g., updated amounts)
     before = len(df)
     df = df.drop_duplicates(subset=["order_id"], keep="last")
-    logger.info(f"Deduplication removed {before - len(df)} duplicate order(s)")
+    logger.info(f"Deduplication removed {before - len(df)} duplicate order")
 
     all_rejects = []
 
@@ -61,7 +60,7 @@ def process(run_date: str) -> None:
     df, rej = split_rejects(df, df["amount"].isna(), "missing_amount")
     all_rejects.append(rej)
 
-    # Negative amounts are structurally invalid in this domain (refunds use status=refunded)
+    # Negative amounts are structurally invalid in this domain
     df, rej = split_rejects(df, df["amount"] < 0, "negative_amount")
     all_rejects.append(rej)
 
@@ -73,7 +72,7 @@ def process(run_date: str) -> None:
     )
     all_rejects.append(rej)
 
-    # Validate customer_id referential integrity against silver customers (if available)
+    # Validate customer_id referential integrity against silver customers
     cust_silver_dir = get_silver_path(DOMAIN, "customers", run_date)
     cust_files = glob.glob(os.path.join(cust_silver_dir, "*.csv"))
     if cust_files:
@@ -85,7 +84,7 @@ def process(run_date: str) -> None:
         )
         df, rej = split_rejects(df, ~df["customer_id"].isin(valid_ids), "unknown_customer_id")
         all_rejects.append(rej)
-        logger.info(f"Referential integrity check: {len(rej)} order(s) with unknown customer_id")
+        logger.info(f"Referential integrity check: {len(rej)} order with unknown customer_id")
     else:
         logger.warning("Silver customers not found — skipping customer_id validation")
 
@@ -105,7 +104,7 @@ def process(run_date: str) -> None:
         combined.to_csv(
             os.path.join(rej_dir, "orders.csv"), index=False, encoding="utf-8"
         )
-        logger.warning(f"Rejects: {len(combined)} order record(s) written to rejects")
+        logger.warning(f"Rejects: {len(combined)} order record written to rejects")
 
 
 if __name__ == "__main__":
