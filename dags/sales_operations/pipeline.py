@@ -108,4 +108,5 @@ with DAG(
     check_inputs >> [bronze_customers, bronze_orders]
     bronze_customers >> silver_customers
     bronze_orders >> silver_orders
-    [silver_customers, silver_orders] >> [dim_customers, fact_orders]
+    [silver_customers, silver_orders] >> dim_customers
+    [silver_customers, silver_orders] >> fact_orders
