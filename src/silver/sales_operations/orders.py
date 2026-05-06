@@ -95,7 +95,7 @@ def process(run_date: str) -> None:
     report_quality(df, "silver.orders")
 
     out_dir = ensure_dir(get_silver_path(DOMAIN, ENTITY, run_date))
-    df.to_csv(os.path.join(out_dir, "silver_orders.csv"), index=False, encoding="utf-8")
+    df.to_csv(os.path.join(out_dir, "orders.csv"), index=False, encoding="utf-8")
     logger.info(f"Silver orders written: {len(df)} records")
 
     non_empty = [r for r in all_rejects if len(r) > 0]
@@ -103,7 +103,7 @@ def process(run_date: str) -> None:
         combined = pd.concat(non_empty, ignore_index=True)
         rej_dir = ensure_dir(get_rejects_path(DOMAIN, ENTITY, run_date))
         combined.to_csv(
-            os.path.join(rej_dir, "rejects_orders.csv"), index=False, encoding="utf-8"
+            os.path.join(rej_dir, "orders.csv"), index=False, encoding="utf-8"
         )
         logger.warning(f"Rejects: {len(combined)} order record(s) written to rejects")
 

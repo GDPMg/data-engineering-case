@@ -1,0 +1,10 @@
+order_id,customer_id,order_date,amount,payment_method,status,source_file,ingestion_timestamp,pipeline_run_date,reject_reason
+O00066,C0054,,299.03,boleto,paid,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,invalid_or_missing_date
+O00166,C0009,,356.37,pix,refunded,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,invalid_or_missing_date
+O00022,C0029,2024-07-10,,pix,paid,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,missing_amount
+O00089,C0006,2024-07-30,,credit_card,paid,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,missing_amount
+O00144,C0052,2024-08-07,,boleto,paid,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,missing_amount
+O00058,C0047,2024-08-22,-476.93,pix,cancelled,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,negative_amount
+O00121,C0005,2024-07-31,-608.82,boleto,paid,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,negative_amount
+O00073,C9999,2024-09-11,902.94,credit_card,paid,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,unknown_customer_id
+O00155,C9999,2024-08-22,893.62,boleto,paid,BRA - Cientista de dados - Orders.csv,2026-05-06T15:42:47.655999+00:00,2026-05-06,unknown_customer_id
