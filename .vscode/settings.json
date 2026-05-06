@@ -5,6 +5,7 @@
         "silver_layer",
         "gold_layer",
         "utils",
-        "Airflow"
+        "Airflow",
+        "output"
     ]
 }
