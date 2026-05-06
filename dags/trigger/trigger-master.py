@@ -23,7 +23,7 @@ with DAG(
     tags=["trigger", "master"],
 ) as dag:
 
-    with TaskGroup("bronze_silver") as bronze_silver_group:
+    with TaskGroup("Trusted") as Trusted:
         trigger_customers = TriggerDagRunOperator(
             task_id="trigger_customers_pipeline",
             trigger_dag_id="dag-trusted-sales-operations-customers",
@@ -38,9 +38,11 @@ with DAG(
             reset_dag_run=True,
             poke_interval=30,
         )
+
         trigger_customers >> trigger_orders
 
-    with TaskGroup("gold") as gold_group:
+
+    with TaskGroup("Refined") as Refined:
         trigger_dim_customers = TriggerDagRunOperator(
             task_id="trigger_gold_dim_customers",
             trigger_dag_id="dag-refined-sales-operations-dim-customers",
@@ -73,4 +75,4 @@ with DAG(
         trigger_dim_customers >> trigger_agg_customer_metrics
         trigger_fact_orders >> trigger_agg_orders_monthly
 
-    bronze_silver_group >> gold_group
+    Trusted >> Refined
