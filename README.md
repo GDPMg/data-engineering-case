@@ -68,30 +68,11 @@ A Bronze **não altera conteúdo**
 
 ### Silver (Trusted)
 
-**Responsabilidade:** limpeza, padronização de domínio, validações e anonimização LGPD.
+Limpeza, validações e LGPD. Ambas as entidades passam por deduplicação (`keep="last"`, pois a fonte corrige registros adicionando linhas ao final) e normalização de datas (aceita `dd/mm/yyyy` e `yyyy/mm/dd`).
 
-**Customers:**
+Tratamentos específicos de **customers:** status fora de `active/inactive/blocked` → rejeição. Campos opcionais ausentes (`email`, `phone`, `created_at`) geram flags no registro, que segue sem ser rejeitado. LGPD aplicada ao final.
 
-| Tratamento | Detalhe |
-|---|---|
-| Deduplicação | `keep="last"` por `customer_id` |
-| Normalização de datas | Aceita `%Y-%m-%d`, `%d/%m/%Y`, `%Y/%m/%d` → padroniza para `%Y-%m-%d` |
-| Status inválido | Rejeição com `reject_reason = invalid_status` |
-| Campos opcionais ausentes | Mantém o registro; adiciona flags `has_email`, `has_phone`, `has_created_at` |
-| LGPD | `name` → SHA-256, `email` → `***@domínio`, `phone` → `****1234` |
-
-**Orders:**
-
-| Tratamento | Detalhe |
-|---|---|
-| Deduplicação | `keep="last"` por `order_id` |
-| Normalização de datas | Mesma lógica dos customers; datas inválidas → rejeição |
-| Normalização de `amount` | Aceita vírgula como separador decimal (`73,18` → `73.18`) |
-| Valor nulo | Rejeição com `missing_amount` |
-| Valor negativo | Rejeição com `negative_amount` — reembolsos devem usar `status=refunded` |
-| Status inválido | Rejeição com `invalid_status` |
-| Método de pagamento inválido | Rejeição com `invalid_payment_method` |
-| `customer_id` inexistente | Rejeição com `unknown_customer_id` (validação referencial contra Silver customers) |
+Tratamentos específicos de **orders:** `amount` nulo ou negativo → rejeição (reembolsos usam `status=refunded`, não valor negativo). Aceita vírgula como separador decimal. `customer_id` não encontrado na Silver customers → rejeição por falha referencial.
 
 ### Rejects
 
@@ -149,54 +130,16 @@ O domínio do e-mail é preservado intencionalmente para permitir análises de d
 
 ## 6. Modelagem Gold
 
-Todas as tabelas Gold são arquivos únicos e acumulados — sem partição por data. A cada execução, o arquivo existente é recarregado, mesclado com novos dados e deduplicado.
+Quatro tabelas, todas acumuladas em arquivo único sem partição de data. A cada run o arquivo é recarregado, mesclado com os dados novos e deduplicado pela chave primária.
 
-### `dim_customers`
-
-Dimensão de clientes com atributos cadastrais e métrica derivada:
-
-| Coluna | Descrição |
+| Tabela | Descrição |
 |---|---|
-| `customer_id` | Chave primária |
-| `city`, `state` | Localização |
-| `status` | Status atual (`active/inactive/blocked`) |
-| `created_at` | Data de cadastro |
-| `days_since_registration` | Calculado em relação à data de execução |
+| `dim_customers` | Atributos cadastrais do cliente + `days_since_registration` calculado na execução |
+| `fact_orders` | Pedidos com `year`, `month` e `quarter` derivados para facilitar análise temporal |
+| `agg_customer_metrics` | Total de pedidos, volume financeiro e janela de atividade por cliente |
+| `agg_orders_monthly` | Volume mensal com breakdown por status (`paid`, `cancelled`, `refunded`) |
 
-### `fact_orders`
-
-Tabela fato de pedidos enriquecida com colunas de tempo:
-
-| Coluna | Descrição |
-|---|---|
-| `order_id` | Chave primária |
-| `customer_id` | Chave estrangeira para `dim_customers` |
-| `order_date`, `amount`, `status`, `payment_method` | Atributos do pedido |
-| `year`, `month`, `quarter` | Colunas derivadas para análise temporal |
-
-### `agg_customer_metrics`
-
-Agregação por cliente calculada a partir de todos os pedidos históricos:
-
-| Coluna | Descrição |
-|---|---|
-| `customer_id` | Chave |
-| `total_orders` | Total de pedidos |
-| `total_amount`, `avg_order_amount` | Volume financeiro |
-| `first_order_date`, `last_order_date` | Janela de atividade |
-
-### `agg_orders_monthly`
-
-Agregação mensal recalculada integralmente a partir de todas as partições Silver disponíveis, garantindo consistência histórica:
-
-| Coluna | Descrição |
-|---|---|
-| `year`, `month` | Chave composta |
-| `total_orders`, `total_amount`, `avg_amount` | Volume |
-| `unique_customers` | Clientes únicos no período |
-| `paid_count`, `cancelled_count`, `refunded_count` | Breakdown por status |
-
-> **Nota sobre recálculo:** `agg_orders_monthly` e `agg_customer_metrics` varrem todas as partições Silver acumuladas (não só a do dia), garantindo que uma correção em dados históricos se propague corretamente para as agregações.
+As agregações (`agg_*`) são sempre recalculadas a partir de todas as partições Silver disponíveis — não só a do dia — então uma correção histórica se propaga automaticamente.
 
 ---
 
