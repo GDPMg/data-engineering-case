@@ -5,23 +5,19 @@ import os
 logger = logging.getLogger(__name__)
 
 
-def check_all_inputs(domain: str, run_date: str) -> bool:
-    """
-    ShortCircuitOperator callable.
-    Returns True only when ALL entity input folders for the domain contain at least one CSV.
-    If any file is missing, logs the missing path and returns False — skipping the entire pipeline.
-    """
+def check_entity_input(domain: str, entity: str, run_date: str) -> bool:
     base = os.environ.get("PIPELINE_BASE_DIR", "/opt/pipeline")
-    entities = ["customers", "orders"]
-    all_present = True
+    path = os.path.join(base, "data", "input", domain, entity, run_date)
+    files = glob.glob(os.path.join(path, "*.csv"))
+    if files:
+        logger.info(f"Input found for '{entity}' ({run_date}): {[os.path.basename(f) for f in files]}")
+        return True
+    logger.warning(f"No input file for '{entity}' at {path} — pipeline will be skipped")
+    return False
 
-    for entity in entities:
-        path = os.path.join(base, "data", "input", domain, entity, run_date)
-        files = glob.glob(os.path.join(path, "*.csv"))
-        if files:
-            logger.info(f"Input found for '{entity}' ({run_date}): {[os.path.basename(f) for f in files]}")
-        else:
-            logger.warning(f"No input file for '{entity}' at {path} — pipeline will be skipped")
-            all_present = False
 
-    return all_present
+def check_all_inputs(domain: str, run_date: str) -> bool:
+    return all(
+        check_entity_input(domain, entity, run_date)
+        for entity in ["customers", "orders"]
+    )
