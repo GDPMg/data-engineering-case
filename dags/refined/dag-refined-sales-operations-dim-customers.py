@@ -3,6 +3,7 @@ import sys
 from datetime import datetime, timedelta
 
 from airflow import DAG
+from airflow.models.param import Param
 from airflow.operators.python import PythonOperator
 
 _SRC_DIR = os.environ.get("PIPELINE_SRC_DIR", "/opt/pipeline/src")
@@ -27,11 +28,16 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=["sales_operations", "gold", "customers"],
+    params={
+        "run_date": Param(
+            default=datetime.now().strftime("%Y-%m-%d"),
+            type="string"
+        )
+    },
 ) as dag:
-
 
     build = PythonOperator(
         task_id="build_dim_customers",
         python_callable=build_fn,
-        op_kwargs={"run_date": "{{ ds }}"},
+        op_kwargs={"run_date": "{{ params.run_date }}"},
     )
