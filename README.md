@@ -294,4 +294,3 @@ python src/gold/sales_operations/agg_customer_metrics.py
 python src/gold/sales_operations/agg_orders_monthly.py
 ```
 
-Por padrão, os scripts usam `date.today()` como `run_date`. Para testar outra data, modifique a chamada no bloco `if __name__ == "__main__"` de cada script.
