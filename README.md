@@ -213,7 +213,7 @@ dags/
 DAG principal com agendamento configurável via Airflow Variable:
 
 ```
-SCHEDULE_INTERVAL_DAILY  (padrão: "0 11 * * *" — todo dia às 6h)
+SCHEDULE_INTERVAL_DAILY  (padrão: "0 6 * * *" — todo dia às 6h)
 ```
 
 Estrutura de execução:
