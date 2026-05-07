@@ -4,12 +4,15 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.models.param import Param
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, ShortCircuitOperator
 
+_DAGS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SRC_DIR = os.environ.get("PIPELINE_SRC_DIR", "/opt/pipeline/src")
-if _SRC_DIR not in sys.path:
-    sys.path.insert(0, _SRC_DIR)
+for _p in [_SRC_DIR, _DAGS_DIR]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
+from dag_utils.file_checks import check_entity_silver
 from gold.sales_operations.fact_orders import build as build_fn
 
 
@@ -36,8 +39,16 @@ with DAG(
     },
 ) as dag:
 
+    check_silver = ShortCircuitOperator(
+        task_id="check_silver_files",
+        python_callable=check_entity_silver,
+        op_kwargs={"domain": "sales_operations", "entity": "orders", "run_date": "{{ params.run_date }}"},
+    )
+
     build = PythonOperator(
         task_id="build_fact_orders",
         python_callable=build_fn,
         op_kwargs={"run_date": "{{ params.run_date }}"},
     )
+
+    check_silver >> build
