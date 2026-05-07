@@ -1,131 +1,306 @@
-# Koin Data Engineering Case
+# Koin Data Engineering
 
-Pipeline medalhão (Bronze → Silver → Gold) com orquestração em Apache Airflow 2.9 + Docker.
+Pipeline de dados baseado na arquitetura medalhão (**Bronze → Silver → Gold**), com orquestração pelo **Apache Airflow** rodando em **Docker**. O projeto foi organizado pensando em crescimento e manutenção. O domínio `sales_operations` foi usado como primeiro conjunto de dados, mas a estrutura de pastas, códigos e DAGs já foi pensada para permitir a inclusão de novos domínios no futuro sem precisar refazer a arquitetura.
+
+
+## 1. Visão Geral da Arquitetura
+
+```
+data/input/     →   data/bronze/    →   data/silver/    →   data/gold/
+  CSV bruto          Ingestão              Limpeza +          Tabelas
+  da fonte           padronizada           validações         analíticas
+                                           LGPD aplicada
+                                                ↓
+                                         data/rejects/
+                                         Registros inválidos
+                                         com motivo de rejeição
+```
+
+Todos os dados são organizados por **domínio** e **entidade**, seguindo a convenção:
+
+```
+data/{camada}/{dominio}/{entidade}/{YYYY-MM-DD}/
+```
+
+A separação por domínio (`sales_operations`, e futuros domínios como `financial`, `logistics`, etc.) permite que múltiplos datasets coexistam na mesma infraestrutura sem colisão de caminhos, DAGs ou lógica de processamento.
 
 ---
 
-## Arquitetura
+## 2. Decisões de Design
 
-```
-input  →  bronze  →  silver  →  gold
-                         ↓
-                      rejects
-```
+### Por que o domínio `sales_operations`?
 
-Os dados são organizados por dataset e tabela:
+O nome não é apenas uma pasta — é um namespace. A decisão de estruturar tudo em torno de domínios antecipa a chegada de dados de outras áreas (financeiro, logística, marketing), permitindo:
 
-```
-data/{camada}/sales_operations/{tabela}/{YYYY-MM-DD}/
-```
+- Adicionar um novo domínio sem tocar no código existente
+- DAGs independentes por domínio, sem dependências cruzadas indesejadas
+- Isolamento de rejeitos, logs e métricas por domínio
 
-O namespace `sales_operations` foi uma escolha deliberada pensando em escala: quando chegarem dados de outras áreas (financeiro, logística...), cada uma ganha seu próprio domínio sem mexer no que já existe. Novas DAGs, novos scripts em `src/`, mesmo padrão.
+### LGPD na camada Silver, não Bronze
 
----
+Os dados brutos são ingeridos na Bronze sem qualquer transformação de conteúdo, preservando a fidelidade com a fonte. O mascaramento de PII só ocorre na transição Bronze → Silver, garantindo que:
 
-## Decisões de design
+- A Bronze seja auditável e rastreável até a origem
+- A Silver em diante seja segura para uso analítico
+- Nunca haja dados pessoais nas camadas analíticas
 
-**LGPD na Silver, não na Bronze**
-A Bronze preserva os dados exatamente como vieram da fonte — isso é importante para auditoria e rastreabilidade. O mascaramento de PII só acontece na transição Bronze → Silver, então as camadas analíticas nunca têm dados pessoais em texto plano.
+### Gold sem partição de data
 
-**Deduplicação com `keep="last"`**
-A fonte adota o padrão de corrigir registros adicionando uma nova linha ao final do arquivo. Por isso mantemos sempre a última ocorrência por chave primária — ela representa a versão mais atualizada.
-
-**Gold sem partição de data**
-Cada tabela Gold é um único arquivo acumulado. A cada execução, o arquivo existente é carregado, mesclado com os dados novos e deduplicado pela chave primária. Isso simplifica muito o consumo: ferramentas de BI e analistas apontam para um caminho fixo, sem saber nada sobre partições.
-
-**Agregações recalculadas do zero**
-`agg_orders_monthly` e `agg_customer_metrics` varrem todas as partições Silver disponíveis a cada run, não só a do dia. Isso garante que uma correção histórica se propague automaticamente para os agregados.
+As tabelas Gold são arquivos únicos e acumulados por tabela, sem subdivisão por data de execução. A cada pipeline run, o arquivo existente é carregado, mesclado com os novos dados da Silver e deduplicado pela chave primária — o arquivo resultante representa sempre o estado mais atual e completo da tabela.
 
 ---
 
-## Camadas
+## 3. Camadas do Pipeline
+
+### Input
+
+Dados brutos entregues pela fonte, sem qualquer modificação. Em um cenário real, essa origem poderia ser substituída por integrações com Google Drive, OneDrive, etc.
 
 ### Bronze
-Ingestão fiel: normaliza headers (`lower + strip`), adiciona `source_file`, `ingestion_timestamp` e `pipeline_run_date`. Nenhum valor é alterado.
+
+- **Normalização de colunas:** aplicação de `strip`, `lower` e `replace(" ", "_")` em todos os cabeçalhos.
+
+- **Metadados de rastreabilidade:** inclusão das colunas `source_file`, com o nome do arquivo de origem, e `ingestion_timestamp`, com o horário de ingestão em UTC.
+
+- **Data de execução do pipeline:** inclusão da coluna `pipeline_run_date`, representando a data em que o pipeline foi executado.
+
+A Bronze **não altera conteúdo** 
 
 ### Silver (Trusted)
 
-**Customers:** deduplicação por `customer_id`, normalização de datas (aceita `dd/mm/yyyy` e `yyyy/mm/dd`), rejeição de status inválido, flags para campos opcionais ausentes (`has_email`, `has_phone`, `has_created_at`), LGPD aplicada ao final.
+**Responsabilidade:** limpeza, padronização de domínio, validações e anonimização LGPD.
 
-**Orders:** deduplicação por `order_id`, normalização de datas e de `amount` (aceita vírgula como separador decimal). Registros rejeitados e seus motivos:
+**Customers:**
 
-| Motivo de rejeição | Condição |
+| Tratamento | Detalhe |
 |---|---|
-| `invalid_or_missing_date` | Data ausente ou não parseável |
-| `missing_amount` | Valor nulo |
-| `negative_amount` | Valor < 0 (reembolsos usam `status=refunded`) |
-| `invalid_status` | Fora de `paid / cancelled / refunded` |
-| `invalid_payment_method` | Fora de `credit_card / pix / boleto / debit_card` |
-| `unknown_customer_id` | `customer_id` não encontrado na Silver customers |
+| Deduplicação | `keep="last"` por `customer_id` |
+| Normalização de datas | Aceita `%Y-%m-%d`, `%d/%m/%Y`, `%Y/%m/%d` → padroniza para `%Y-%m-%d` |
+| Status inválido | Rejeição com `reject_reason = invalid_status` |
+| Campos opcionais ausentes | Mantém o registro; adiciona flags `has_email`, `has_phone`, `has_created_at` |
+| LGPD | `name` → SHA-256, `email` → `***@domínio`, `phone` → `****1234` |
 
-Todos os rejeitos vão para `data/rejects/sales_operations/{entidade}/YYYY-MM-DD/` com a coluna `reject_reason`. Um arquivo com problemas parciais não trava o processamento — os registros válidos seguem normalmente.
+**Orders:**
 
-### Gold (Refined)
-
-| Tabela | O que contém |
+| Tratamento | Detalhe |
 |---|---|
-| `dim_customers` | Atributos cadastrais + `days_since_registration` calculado |
-| `fact_orders` | Pedidos com `year`, `month`, `quarter` derivados |
-| `agg_customer_metrics` | Total de pedidos, volume financeiro e janela de atividade por cliente |
-| `agg_orders_monthly` | Volume mensal com breakdown por status de pagamento |
+| Deduplicação | `keep="last"` por `order_id` |
+| Normalização de datas | Mesma lógica dos customers; datas inválidas → rejeição |
+| Normalização de `amount` | Aceita vírgula como separador decimal (`73,18` → `73.18`) |
+| Valor nulo | Rejeição com `missing_amount` |
+| Valor negativo | Rejeição com `negative_amount` — reembolsos devem usar `status=refunded` |
+| Status inválido | Rejeição com `invalid_status` |
+| Método de pagamento inválido | Rejeição com `invalid_payment_method` |
+| `customer_id` inexistente | Rejeição com `unknown_customer_id` (validação referencial contra Silver customers) |
+
+### Rejects
+
+Todos os registros que não passam pelas validações da Silver são gravados em:
+
+```
+data/rejects/sales_operations/{entidade}/YYYY-MM-DD/rejects_{entidade}.csv
+```
+
+Cada registro rejeitado recebe a coluna `reject_reason` indicando o motivo da rejeição. Múltiplas rejeições no mesmo run são consolidadas em um único arquivo por entidade.
 
 ---
 
-## LGPD
+## 4. Qualidade de Dados
 
-Mascaramento aplicado na Silver, após deduplicação:
+### Relatório de qualidade (`report_quality`)
 
-| Campo | Resultado |
-|---|---|
-| `name` | SHA-256 com salt (`ANONYMIZATION_SALT`) |
-| `email` | `***@gmail.com` — domínio preservado para análise de provider |
-| `phone` | `******3456` — últimos 4 dígitos |
-| `cpf_hash` | Já vem hasheado da fonte, não reprocessado |
+Em todas as camadas (Bronze e Silver), após o carregamento dos dados, é gerado um relatório de qualidade via log que inclui:
+
+- Total de registros
+- Contagem e percentual de nulos por coluna
+- Contagem de linhas completamente duplicadas
+
+### Rejeições (`split_rejects`)
+
+O padrão de rejeição usa uma máscara booleana para separar registros válidos de inválidos sem interromper o pipeline. O fluxo continua com os registros válidos e os rejeitados são acumulados para gravação ao final. Isso garante que um arquivo com problemas parciais não bloqueie o processamento completo.
+
+### Validações aplicadas
+
+| Validação | Camada | Entidade |
+|---|---|---|
+| Data inválida ou ausente | Silver | Customers, Orders |
+| Status fora do domínio | Silver | Customers (`active/inactive/blocked`), Orders (`paid/cancelled/refunded`) |
+| `amount` nulo | Silver | Orders |
+| `amount` negativo | Silver | Orders |
+| Método de pagamento inválido | Silver | Orders (`credit_card/pix/boleto/debit_card`) |
+| Integridade referencial `customer_id` | Silver | Orders → valida contra Silver Customers |
 
 ---
 
-## Orquestração
+## 5. LGPD e Anonimização
+
+O mascaramento é aplicado na camada **Silver**, após a deduplicação e antes da gravação do arquivo:
+
+| Campo | Técnica | Resultado |
+|---|---|---|
+| `name` | SHA-256 com salt configurável via env `ANONYMIZATION_SALT` | `a3f9c2...` (64 chars hex) |
+| `email` | Preserva domínio, oculta usuário | `***@gmail.com` |
+| `phone` | Preserva últimos 4 dígitos | `******3456` |
+| `cpf_hash` | Já fornecido hasheado pela fonte | Não reprocessado |
+
+O domínio do e-mail é preservado intencionalmente para permitir análises de distribuição por provedor sem expor identidades. O salt do hash pode ser rotacionado via variável de ambiente sem alteração de código.
+
+---
+
+## 6. Modelagem Gold
+
+Todas as tabelas Gold são arquivos únicos e acumulados — sem partição por data. A cada execução, o arquivo existente é recarregado, mesclado com novos dados e deduplicado.
+
+### `dim_customers`
+
+Dimensão de clientes com atributos cadastrais e métrica derivada:
+
+| Coluna | Descrição |
+|---|---|
+| `customer_id` | Chave primária |
+| `city`, `state` | Localização |
+| `status` | Status atual (`active/inactive/blocked`) |
+| `created_at` | Data de cadastro |
+| `days_since_registration` | Calculado em relação à data de execução |
+
+### `fact_orders`
+
+Tabela fato de pedidos enriquecida com colunas de tempo:
+
+| Coluna | Descrição |
+|---|---|
+| `order_id` | Chave primária |
+| `customer_id` | Chave estrangeira para `dim_customers` |
+| `order_date`, `amount`, `status`, `payment_method` | Atributos do pedido |
+| `year`, `month`, `quarter` | Colunas derivadas para análise temporal |
+
+### `agg_customer_metrics`
+
+Agregação por cliente calculada a partir de todos os pedidos históricos:
+
+| Coluna | Descrição |
+|---|---|
+| `customer_id` | Chave |
+| `total_orders` | Total de pedidos |
+| `total_amount`, `avg_order_amount` | Volume financeiro |
+| `first_order_date`, `last_order_date` | Janela de atividade |
+
+### `agg_orders_monthly`
+
+Agregação mensal recalculada integralmente a partir de todas as partições Silver disponíveis, garantindo consistência histórica:
+
+| Coluna | Descrição |
+|---|---|
+| `year`, `month` | Chave composta |
+| `total_orders`, `total_amount`, `avg_amount` | Volume |
+| `unique_customers` | Clientes únicos no período |
+| `paid_count`, `cancelled_count`, `refunded_count` | Breakdown por status |
+
+> **Nota sobre recálculo:** `agg_orders_monthly` e `agg_customer_metrics` varrem todas as partições Silver acumuladas (não só a do dia), garantindo que uma correção em dados históricos se propague corretamente para as agregações.
+
+---
+
+## 7. Orquestração com Airflow
+
+### Estrutura de DAGs
+
+As DAGs seguem a mesma lógica de domínio do restante do projeto, separadas em três camadas de responsabilidade:
 
 ```
 dags/
-├── trigger/trigger-master.py         ← agenda e orquestra tudo
-├── trusted/                          ← bronze + silver
+├── dag_utils/
+│   └── file_checks.py          ← Utilitários compartilhados entre DAGs
+├── trigger/
+│   └── trigger-master.py       ← Orquestrador principal (@daily)
+├── trusted/                    ← Bronze + Silver (dados confiáveis)
 │   ├── dag-trusted-sales-operations-customers.py
 │   └── dag-trusted-sales-operations-orders.py
-└── refined/                          ← gold
+└── refined/                    ← Gold (dados analíticos refinados)
     ├── dag-refined-sales-operations-dim-customers.py
     ├── dag-refined-sales-operations-fact-orders.py
     ├── dag-refined-sales-operations-agg-customer-metrics.py
     └── dag-refined-sales-operations-agg-orders-monthly.py
 ```
 
-O `trigger-master` roda com cron configurável via Airflow Variable (`SCHEDULE_INTERVAL_DAILY`, padrão `0 6 * * *`). Ele aciona as DAGs filhas em ordem:
+A nomenclatura `trusted` e `refined` reflete a maturidade dos dados em cada estágio, independente dos nomes das pastas em `src/`.
+
+### `trigger-master`
+
+DAG principal com agendamento configurável via Airflow Variable:
 
 ```
-Trusted: customers → orders  (sequencial — orders valida customer_id contra silver customers)
-Refined: dim_customers → agg_customer_metrics
-         fact_orders   → agg_orders_monthly
+SCHEDULE_INTERVAL_DAILY  (padrão: "0 6 * * *" — todo dia às 6h)
 ```
 
-As DAGs trusted e refined têm `schedule_interval=None` — só rodam quando acionadas pelo master.
+Estrutura de execução:
 
-Cada DAG trusted começa com um `ShortCircuitOperator` que verifica se o arquivo de input existe para a data do run. Se não existir, as tasks seguintes são puladas sem falhar o pipeline.
+Customers roda antes de orders no grupo Trusted para que a validação de integridade referencial (Silver orders verifica `customer_id` contra Silver customers) encontre o arquivo já disponível.
+
+Dentro do grupo Refined, `dim_customers` precede `agg_customer_metrics` e `fact_orders` precede `agg_orders_monthly`, pois as agregações dependem das tabelas base.
+
+### `ShortCircuitOperator`
+
+Cada DAG trusted começa com uma verificação de presença de arquivo de input. Se nenhum CSV for encontrado para a entidade e data do run, todas as tasks downstream são **puladas** (status `skipped`, não `failed`), preservando o histórico limpo no Airflow.
 
 ---
 
-## Como executar
+## 8. Escalabilidade e Reprocessamento
 
-### Docker
+### Adicionando um novo domínio
+
+Para incorporar um novo conjunto de dados (ex: `financial_operations`):
+
+1. Criar `src/bronze/financial_operations/`, `src/silver/financial_operations/`, `src/gold/financial_operations/`
+2. Criar `dags/trusted/dag-trusted-financial-operations-*.py`
+3. Criar `dags/refined/dag-refined-financial-operations-*.py`
+4. Adicionar os triggers no `trigger-master.py` em novos TaskGroups
+
+Nenhum código existente precisa ser alterado.
+
+### Reprocessamento de uma data específica
+
+Cada script de processamento recebe `run_date` como parâmetro. Para reprocessar:
 
 ```bash
-docker compose up airflow-init
-docker compose up -d
-# UI: http://localhost:8080  |  admin / admin
+# Localmente
+PIPELINE_BASE_DIR=$(pwd) PYTHONPATH=$(pwd)/src \
+  python src/silver/sales_operations/orders.py  # usa date.today() por padrão
 ```
 
-Habilite a DAG `trigger-master` na UI — ela cuida do resto.
+Para reprocessar via Airflow, basta acionar a DAG com uma data específica pelo parâmetro `logical_date` na UI ou via CLI.
 
-### Localmente
+### Reprocessamento da Gold
+
+A Gold foi projetada para ser idempotente: ao rodar novamente para qualquer data, ela relê a Silver e reconstrói o arquivo acumulado com deduplicação. Não há risco de duplicação de registros ao reprocessar.
+
+Para `agg_orders_monthly` e `agg_customer_metrics`, o recálculo é feito sempre a partir de **todas** as partições Silver disponíveis, não apenas a do dia corrente — isso garante que correções históricas se propaguem corretamente.
+
+
+---
+
+## 9. Como Executar
+
+### Com Docker (recomendado)
+
+```bash
+# 1. Inicializar o banco e criar usuário admin
+docker compose up airflow-init
+
+# 2. Subir os serviços
+docker compose up -d
+
+# 3. Acessar a UI
+# http://localhost:8080  |  usuário: admin  |  senha: admin
+```
+
+Na UI do Airflow:
+
+1. Habilitar a DAG `trigger-master`
+2. Ela acionará automaticamente todas as sub-DAGs na ordem correta
+
+> Para testar com uma data específica, acione a DAG manualmente com o parâmetro `logical_date` na UI.
+
+### Localmente (sem Docker)
 
 ```bash
 pip install -r requirements.txt
@@ -133,19 +308,19 @@ pip install -r requirements.txt
 export PIPELINE_BASE_DIR=$(pwd)
 export PYTHONPATH=$(pwd)/src
 
+# Bronze
 python src/bronze/sales_operations/customers.py
 python src/bronze/sales_operations/orders.py
+
+# Silver
 python src/silver/sales_operations/customers.py
 python src/silver/sales_operations/orders.py
+
+# Gold
 python src/gold/sales_operations/dim_customers.py
 python src/gold/sales_operations/fact_orders.py
 python src/gold/sales_operations/agg_customer_metrics.py
 python src/gold/sales_operations/agg_orders_monthly.py
 ```
 
-Os scripts usam `date.today()` por padrão. Para testar outra data, edite o bloco `if __name__ == "__main__"` de cada script.
-
-O input esperado é:
-```
-data/input/sales_operations/{customers,orders}/YYYY-MM-DD/arquivo.csv
-```
+Por padrão, os scripts usam `date.today()` como `run_date`. Para testar outra data, modifique a chamada no bloco `if __name__ == "__main__"` de cada script.
