@@ -1,0 +1,65 @@
+customer_id,cpf_hash,name,email,phone,city,state,created_at,status
+C0001,hash_0001_3286,Ana Oliveira,ana.oliveira@outlook.com,21939958838,Campinas,SP,2024-01-07,active
+C0002,hash_0002_2535,Bruno Oliveira,bruno.oliveira@empresa.com.br,11913999315,Londrina,PR,2024-01-23,active
+C0003,hash_0003_9928,Carla Santos,carla.santos@email.com,71936687537,Londrina,PR,2024-06-03,inactive
+C0004,hash_0004_7924,Diego Santos,diego.santos@outlook.com,11931429110,Curitiba,PR,2024-05-30,active
+C0005,hash_0005_7224,Fernanda Lima,fernanda.lima@outlook.com,11922448136,Santos,SP,2024-02-25,active
+C0006,hash_0006_9785,Gabriel Rocha,gabriel.rocha@outlook.com,11971662963,Belo Horizonte,MG,2024-06-03,active
+C0007,hash_0007_4150,Helena Cardoso,,71958537831,Uberlândia,MG,2024-01-21,active
+C0008,hash_0008_2654,Igor Silva,igor.silva@outlook.com,11941244663,Rio de Janeiro,RJ,2024-07-16,inactive
+C0009,hash_0009_6820,Juliana Lima,juliana.lima@outlook.com,21959684848,Curitiba,PR,2024-06-11,active
+C0010,hash_0010_3803,Lucas Oliveira,lucas.oliveira@email.com,71995225343,Niterói,RJ,2024-06-28,blocked
+C0011,hash_0011_4598,Mariana Souza,mariana.souza@empresa.com.br,41946231783,Rio de Janeiro,RJ,2024-02-11,active
+C0012,hash_0012_5386,Rafael Barbosa,rafael.barbosa@email.com,,São Paulo,SP,2024-02-28,active
+C0013,hash_0013_9179,Patricia Santos,patricia.santos@outlook.com,21997971488,Salvador,BA,2024-08-12,inactive
+C0014,hash_0014_9830,Thiago Cardoso,thiago.cardoso@outlook.com,21943101783,Curitiba,PR,2024-02-06,active
+C0015,hash_0015_3266,Camila Souza,camila.souza@empresa.com.br,31939436733,Salvador,BA,2024-04-19,blocked
+C0016,hash_0016_3621,Rodrigo Almeida,rodrigo.almeida@email.com,11930514014,Campinas,SP,2024-07-12,inactive
+C0017,hash_0017_9669,Beatriz Pereira,beatriz.pereira@empresa.com.br,71972820592,Campinas,SP,08/04/2024,active
+C0018,hash_0018_6573,Eduardo Freitas,eduardo.freitas@email.com,71945812670,São Paulo,SP,2024-06-23,active
+C0019,hash_0019_9201,Larissa Lima,,11945351479,Uberlândia,MG,2024-02-10,active
+C0020,hash_0020_4258,Felipe Freitas,felipe.freitas@outlook.com,71991734598,Campinas,SP,2024-08-10,active
+C0021,hash_0021_9005,Aline Rocha,aline.rocha@email.com,71953507489,Santos,SP,2024-05-18,active
+C0022,hash_0022_4946,Matheus Costa,matheus.costa@outlook.com,21917774584,Belo Horizonte,MG,2024-08-12,blocked
+C0023,hash_0023_3060,Vanessa Costa,vanessa.costa@empresa.com.br,11981498611,Campinas,SP,2024/07/06,active
+C0024,hash_0024_7932,Gustavo Oliveira,gustavo.oliveira@gmail.com,31980823176,Curitiba,PR,2024-05-20,active
+C0025,hash_0025_7118,Renata Cardoso,renata.cardoso@gmail.com,31963551839,Londrina,PR,,inactive
+C0026,hash_0026_2049,João Cardoso,joao.cardoso@email.com,21940158366,Londrina,PR,2024-04-25,active
+C0027,hash_0027_1117,Priscila Silva,priscila.silva@gmail.com,71939557077,Salvador,BA,2024-05-21,active
+C0028,hash_0028_2160,André Souza,andre.souza@email.com,11954349361,São Paulo,SP,2024-02-28,blocked
+C0029,hash_0029_3167,Natália Santos,natália.santos@empresa.com.br,21982374753,Niterói,RJ,2024-06-20,blocked
+C0030,hash_0030_2545,Caio Pereira,caio.pereira@empresa.com.br,41935556386,Curitiba,PR,2024-03-03,active
+C0031,hash_0031_1887,Bianca Oliveira,bianca.oliveira@empresa.com.br,41972682989,Uberlândia,MG,2024-03-31,active
+C0032,hash_0032_4139,Leonardo Silva,leonardo.silva@outlook.com,11943374088,Uberlândia,MG,2024-07-05,active
+C0033,hash_0033_8579,Isabela Freitas,isabela.freitas@empresa.com.br,,Curitiba,PR,2024-02-05,active
+C0034,hash_0034_9856,Marcelo Barbosa,marcelo.barbosa@email.com,11997529405,Campinas,SP,23/04/2024,active
+C0035,hash_0035_4502,Tatiane Costa,tatiane.costa@empresa.com.br,41974606833,Rio de Janeiro,RJ,2024-02-12,inactive
+C0036,hash_0036_5345,Vinicius Cardoso,vinicius.cardoso@empresa.com.br,11962401521,São Paulo,SP,2024-02-12,inactive
+C0037,hash_0037_5861,Leticia Lima,leticia.lima@empresa.com.br,21935487660,Uberlândia,MG,2024-06-27,active
+C0038,hash_0038_1821,Henrique Silva,henrique.silva@email.com,31917672593,Salvador,BA,2024-07-07,blocked
+C0039,hash_0039_2312,Sofia Almeida,sofia.almeida@gmail.com,11978159587,Londrina,PR,2024-08-23,active
+C0040,hash_0040_5033,Daniel Costa,daniel.costa@gmail.com,41926090908,Salvador,BA,2024-01-18,blocked
+C0041,hash_0041_9565,Amanda Pereira,,41998231132,São Paulo,SP,2024-06-07,active
+C0042,hash_0042_7484,Murilo Cardoso,murilo.cardoso@outlook.com,21945650176,Niterói,RJ,2024-02-22,active
+C0043,hash_0043_8508,Paula Oliveira,paula.oliveira@outlook.com,11911250299,Niterói,RJ,2024-04-27,blocked
+C0044,hash_0044_3170,Ricardo Pereira,ricardo.pereira@gmail.com,71945594597,Campinas,SP,2024-01-19,active
+C0045,hash_0045_3584,Débora Cardoso,debora.cardoso@gmail.com,31948250360,Campinas,SP,2024-08-13,inactive
+C0046,hash_0046_9666,Alexandre Barbosa,alexandre.barbosa@outlook.com,71997775215,Londrina,PR,2024/06/29,active
+C0047,hash_0047_2891,Luana Oliveira,luana.oliveira@email.com,21945496015,Londrina,PR,2024-03-17,active
+C0048,hash_0048_4450,Samuel Souza,samuel.souza@outlook.com,31991178885,Londrina,PR,2024-02-09,active
+C0049,hash_0049_2512,Mirela Santos,mirela.santos@empresa.com.br,31916818112,Niterói,RJ,2024-05-09,inactive
+C0050,hash_0050_5291,Otávio Barbosa,otávio.barbosa@email.com,31927558317,Niterói,RJ,2024-01-12,active
+C0051,hash_0051_2832,Ana Souza,ana.souza@empresa.com.br,71911297845,Curitiba,PR,21/05/2024,active
+C0052,hash_0052_3426,Bruno Cardoso,bruno.cardoso@email.com,31988183110,Santos,SP,,inactive
+C0053,hash_0053_4441,Carla Mendes,carla.mendes@outlook.com,11958024342,São Paulo,SP,2024-03-19,active
+C0054,hash_0054_4878,Diego Oliveira,diego.oliveira@empresa.com.br,71930743797,Campinas,SP,2024-03-31,active
+C0055,hash_0055_6442,Fernanda Nunes,fernanda.nunes@empresa.com.br,11934073380,Santos,SP,2024-08-13,inactive
+C0056,hash_0056_1634,Gabriel Nunes,gabriel.nunes@gmail.com,11961343880,Rio de Janeiro,RJ,2024-03-09,inactive
+C0057,hash_0057_4728,Helena Santos,helena.santos@empresa.com.br,31950962024,Rio de Janeiro,RJ,2024-07-28,active
+C0058,hash_0058_5573,Igor Silva,igor.silva@outlook.com,31919317495,Rio de Janeiro,RJ,2024-04-12,active
+C0059,hash_0059_5279,Juliana Oliveira,juliana.oliveira@outlook.com,11925480907,Londrina,PR,2024-04-12,active
+C0060,hash_0060_6663,Lucas Pereira,lucas.pereira@email.com,71968326160,Niterói,RJ,2024-01-10,active
+C0005,hash_0005_7224,Fernanda Lima,fernanda.lima.updated@email.com,11922448136,Santos,SP,2024-02-25,active
+C0015,hash_0015_3266,Camila Souza,camila.souza@empresa.com.br,11999990000,Salvador,BA,2024-04-19,active
+C0030,hash_0030_2545,Caio Pereira,,41935556386,Curitiba,PR,2024-03-03,inactive
+C0045,hash_0045_3584,Débora Cardoso,debora.cardoso@gmail.com,31948250360,São Paulo,SP,2024-08-13,inactive
