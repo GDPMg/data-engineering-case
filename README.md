@@ -213,7 +213,7 @@ dags/
 DAG principal com agendamento configurável via Airflow Variable:
 
 ```
-SCHEDULE_INTERVAL_DAILY  (padrão: "0 6 * * *" — todo dia às 6h)
+SCHEDULE_INTERVAL_DAILY  (padrão: "0 11 * * *" — todo dia às 6h)
 ```
 
 Estrutura de execução:
@@ -245,12 +245,6 @@ Nenhum código existente precisa ser alterado.
 
 Cada script de processamento recebe `run_date` como parâmetro. Para reprocessar:
 
-```bash
-# Localmente
-PIPELINE_BASE_DIR=$(pwd) PYTHONPATH=$(pwd)/src \
-  python src/silver/sales_operations/orders.py  # usa date.today() por padrão
-```
-
 Para reprocessar via Airflow, basta acionar a DAG com uma data específica pelo parâmetro `logical_date` na UI ou via CLI.
 
 ---
@@ -267,7 +261,7 @@ docker compose up airflow-init
 docker compose up -d
 
 # 3. Acessar a UI
-# http://localhost:8080  |  usuário: admin  |  senha: admin
+http://localhost:8080  |  usuário: admin  |  senha: admin
 ```
 
 Na UI do Airflow:
