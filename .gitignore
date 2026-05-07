@@ -5,9 +5,8 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-logs/
+logs/*
+!logs/.gitkeep
 plugins/
 airflow.db
 airflow.cfg
-
-data/input/

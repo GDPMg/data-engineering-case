@@ -6,6 +6,7 @@
         "gold_layer",
         "utils",
         "Airflow",
-        "output"
+        "output",
+        "gitinore"
     ]
 }
