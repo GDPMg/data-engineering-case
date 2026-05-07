@@ -38,7 +38,6 @@ def process(run_date: str) -> None:
     df = pd.concat([pd.read_csv(f, dtype=str) for f in files], ignore_index=True)
     logger.info(f"Silver orders: {len(df)} rows loaded from bronze")
 
-    # Normalize amount: accept both "." and "," as decimal separator
     df["amount"] = pd.to_numeric(
         df["amount"].str.replace(",", ".", regex=False), errors="coerce"
     )
@@ -48,7 +47,6 @@ def process(run_date: str) -> None:
     df["payment_method"] = df["payment_method"].str.strip().str.lower()
 
     # Duplicates: keep last occurrence per order_id
-    # The source may append corrected records (e.g., updated amounts)
     before = len(df)
     df = df.drop_duplicates(subset=["order_id"], keep="last")
     logger.info(f"Deduplication removed {before - len(df)} duplicate order(s)")
@@ -61,7 +59,6 @@ def process(run_date: str) -> None:
     df, rej = split_rejects(df, df["amount"].isna(), "missing_amount")
     all_rejects.append(rej)
 
-    # Negative amounts are structurally invalid in this domain (refunds use status=refunded)
     df, rej = split_rejects(df, df["amount"] < 0, "negative_amount")
     all_rejects.append(rej)
 
@@ -73,7 +70,6 @@ def process(run_date: str) -> None:
     )
     all_rejects.append(rej)
 
-    # Validate customer_id referential integrity against silver customers (if available)
     cust_silver_dir = get_silver_path(DOMAIN, "customers", run_date)
     cust_files = glob.glob(os.path.join(cust_silver_dir, "*.csv"))
     if cust_files:
